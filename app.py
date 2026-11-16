@@ -63,9 +63,32 @@ st.markdown(f"""
 </style>""", unsafe_allow_html=True)
 
 
+APP_SCHEMA = 2          # deve coincidere con model.SCHEMA
+
+
 @st.cache_resource
 def load(which: str) -> CompetingRisksModel:
     return CompetingRisksModel(which)
+
+
+def _check_files() -> None:
+    """Ferma l'app con un messaggio chiaro se i tre file non sono della stessa versione."""
+    import model as _m
+    if getattr(_m, "SCHEMA", 1) != APP_SCHEMA:
+        st.error(
+            "**model.py is out of date.** This app.py needs the two-model version of "
+            "model.py (schema %d), but the one found is schema %d. Replace model.py in "
+            "the repository and reboot the app."
+            % (APP_SCHEMA, getattr(_m, "SCHEMA", 1)))
+        st.stop()
+    try:
+        load("preoperative"); load("postoperative")
+    except Exception as exc:                      # file spaiati o json vecchio
+        st.error(
+            "**The model files do not match.** %s\n\nCheck that app.py, model.py and "
+            "model_coefficients.json all come from the same release, delete any "
+            "__pycache__ folder from the repository, and reboot the app." % exc)
+        st.stop()
 
 
 THIS_YEAR = _dt.date.today().year
@@ -90,6 +113,7 @@ mode = sb.radio(
          "the resection specimen.",
 )
 PRE = mode.startswith("Before")
+_check_files()
 MODEL = load("preoperative" if PRE else "postoperative")
 
 sb.markdown(
@@ -464,5 +488,5 @@ st.markdown("""
   <b>Developed by Claudio Ricci, MD, PhD</b><br>
   Associate Professor of Surgery — University of Bologna<br>
   IRCCS Azienda Ospedaliero–Universitaria di Bologna (S. Orsola–Malpighi Hospital)<br>
-  © 2026 — For research and educational purposes only.
+  © 2026 — For research and educational purposes only. · app v2.0
 </div>""", unsafe_allow_html=True)

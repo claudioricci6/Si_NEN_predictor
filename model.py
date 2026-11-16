@@ -26,6 +26,11 @@ import numpy as np
 
 MODEL_FILE = Path(__file__).with_name("model_coefficients.json")
 
+# Incrementare quando cambia il formato di model_coefficients.json.
+# app.py lo confronta all'avvio: cosi' un model.py vecchio lasciato nel
+# repository viene segnalato subito, invece di rompersi piu' avanti.
+SCHEMA = 2
+
 # Column order of each design matrix. Must match the fitted models.
 COV_POST = [
     "eta_dx",                    # age at diagnosis, years
@@ -106,6 +111,10 @@ class CompetingRisksModel:
             raise ValueError("which must be 'preoperative' or 'postoperative'")
         with open(path, encoding="utf-8") as fh:
             m = json.load(fh)
+        if which not in m:
+            raise ValueError(
+                "model_coefficients.json does not contain the two models. "
+                "It is probably the single-model file of version 1.x: replace it.")
 
         self.which = which
         self.version = m["model_version"]
